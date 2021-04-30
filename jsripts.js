@@ -4,9 +4,8 @@ function init () {
 	var bodySize = document.body.getBoundingClientRect();
 	canvas.setAttribute("width", bodySize.width);
 	canvas.setAttribute("height", bodySize.height);
-	img.src = "models/ship.png";
-	shipX = 100;
-	shipY = canvas.height / 2 - shipHeight / 2;
+	playerShip = new Player(100, bodySize.height, 5, 5, 100, 42, "models/PlayerShip.png", 3);
+	
 	draw();
 }
 
@@ -14,57 +13,101 @@ function init () {
 
 var canvas;
 var ctx;
-var img = new Image();
+
+// Player
+class Player {	
+	constructor(x, y, dx, dy, height, width, img, lives) {
+		this.dx = dx;
+		this.dy = dy;
+		this.height = height;
+		this.x = x;
+		this.y = y / 2 - this.height / 2;
+		this.width = width;
+		this.img = new Image();
+		this.img.src = img;
+		this.lives = lives;
+	}
+}
+var playerShip;
 
 //Moves
-document.addEventListener("mousemove", mouseMoveHandler, false);
-document.addEventListener("keydown", keyDownHandler, false);
-document.addEventListener("keyup", keyUpHandler, false);
+function mouseMoveHandler(e) {
+    var relativeX = e.clientX - canvas.offsetLeft;
+    var relativeY = e.clientY - canvas.offsetTop;
+    if(relativeX > 0 && relativeX < canvas.height) 
+        playerShip.x = relativeX - playerShip.width / 2;
+    
+    if(relativeY > 0 && relativeY < canvas.height)
+    	playerShip.y = relativeY - playerShip.height/ 2;
+}
+
+function keyDownHandler(e) {
+	if(e.keyCode == 40) {
+		rightPressed = true;
+	}
+	if(e.keyCode == 38) {
+    	leftPressed = true;
+	}
+	if (e.keyCode == 37) {
+  		upPressed = true;
+	}
+	if (e.keyCode == 39) {
+		downPressed = true;
+	}	
+}
+
+function keyUpHandler(e) {
+	if(e.keyCode == 40) {
+		rightPressed = false;
+	}
+	if(e.keyCode == 38) {
+    	leftPressed = false;
+	}
+	if (e.keyCode == 37) {
+  		upPressed = false;
+	}
+	if (e.keyCode == 39) {
+		downPressed = false;
+	}	
+}
+
 var rightPressed = false;
 var leftPressed = false;
 var upPressed = false;
 var downPressed = false;
+document.addEventListener("mousemove", mouseMoveHandler, false);
+document.addEventListener("keydown", keyDownHandler, false);
+document.addEventListener("keyup", keyUpHandler, false);
 
 
-//SpaceShip
-var shipX;
-var shipY;
-var shipDy = 5;
-var shipDx = 5;
-var shipHeight = 100;
-var shipWidth = 42;
+
 
 
 
 
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	ctx.drawImage(img, shipX, shipY);
+	ctx.drawImage(playerShip.img, playerShip.x, playerShip.y);
 	
 
-	if(rightPressed && shipY < canvas.width - shipWidth) {
-    	shipY += shipDy;
-    } else if(leftPressed && shipY > 4) {
-   		shipY -= shipDy;
+	if(rightPressed && playerShip.y < canvas.width - playerShip.width) {
+    	playerShip.y += playerShip.dy;
     }
-    if(upPressed && shipX > 4) {
-    	shipX -= shipDx;
-    } else if(downPressed && shipX < canvas.height - shipHeight) {
-    	shipX += shipDx;
+    if(leftPressed && playerShip.y > 4) {
+   		playerShip.y -= playerShip.dy;
+    }
+    if(upPressed && playerShip.x > 4) {
+    	playerShip.x -= playerShip.dx;
+    }
+    if(downPressed && playerShip.x < canvas.height - playerShip.height) {
+    	playerShip.x += playerShip.dx;
     }
 	requestAnimationFrame(draw);
 }
 
-function mouseMoveHandler(e) {
-    var relativeX = e.clientX - canvas.offsetLeft;
-    var relativeY = e.clientY - canvas.offsetTop;
-    if(relativeX > 0 && relativeX < canvas.height) 
-        shipX = relativeX - shipHeight / 2;
-    
-    if(relativeY > 0 && relativeY < canvas.height)
-    	shipY = relativeY - shipHeight / 2;
 
-}
+
+
 
 
 function getRandomInt(min, max) {
@@ -73,35 +116,7 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-function keyDownHandler(e) {
-	if(e.keyCode == 40) {
-    	rightPressed = true;
-	}
-	if(e.keyCode == 38) {
-    	leftPressed = true;
-	}
-	if (e.keyCode == 37){
-  		upPressed = true;
-	}
-	if (e.keyCode == 39){
-		downPressed = true;
-	}	
-}
 
-function keyUpHandler(e) {
-	if(e.keyCode == 40) {
-    	rightPressed = false;
-	}
-	if(e.keyCode == 38) {
-    	leftPressed = false;
-    }
-	if (e.keyCode == 37){
-  		upPressed = false;
-	}
-	if (e.keyCode == 39){
-		downPressed = false;
-	}	
-}
 
 
 
