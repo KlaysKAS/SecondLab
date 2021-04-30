@@ -6,6 +6,7 @@ function init () {
 	canvas.setAttribute("height", bodySize.height);
 	playerShip = new Player(100, bodySize.height, 7, 7, 100, 42, "models/PlayerShip.png", 3);
 	playerBullets = new PBullets("models/Player'sBull.png");
+	bgStars = new Stars();
 	setInterval(draw, fps);
 }
 
@@ -126,6 +127,37 @@ function mouseMoveHandler(e) {
     	playerShip.y = relativeY - playerShip.height/ 2;
 }
 
+//backgroud Stars
+class Stars {
+	constructor() {
+		this.bank = [];
+		for (let i = 1; i <= 15; ++i) {
+			this.bank[i - 1] = {num: i - 1, img: new Image()};
+			var path = "models/Stars/" + i + ".png";
+			this.bank[i - 1].img.src = path;
+		}
+		this.countOfStars = 100;
+		this.stars = [];
+		for (let i = 0;  i < this.countOfStars; ++i) {
+			this.stars[i] = {
+				x: randomInt(0, canvas.width),
+				y: randomInt(15, canvas.height - 15),
+				dx: randomInt(1, 3) / 5.0,
+				img: i % 15
+			};
+		}
+	}
+	drawStar() {
+		for (let i = 0;  i < this.countOfStars; ++i) {
+			ctx.drawImage(this.bank[i % 15].img, this.stars[i].x, this.stars[i].y)
+			this.stars[i].x -= this.stars[i].dx;
+			if (this.stars[i].x < -16)
+				this.stars[i].x = canvas.width + randomInt(20, 500);
+		}
+	}
+}
+var bgStars;
+
 function keyDownHandler(e) {
 	if(e.keyCode == 40) {
 		rightPressed = true;
@@ -174,11 +206,11 @@ document.addEventListener("keyup", keyUpHandler, false);
 
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	bgStars.drawStar();
 	playerShip.draw();
 	playerBullets.draw();
 	
-	
-	
+
 	if (playerBullets.timeout > 0) {
 		playerBullets.timeout--;
 	}
@@ -205,7 +237,7 @@ function draw() {
 
 
 
-function getRandomInt(min, max) {
+function randomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min)) + min;
