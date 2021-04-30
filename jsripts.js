@@ -1,4 +1,5 @@
-function init () {
+function Start() {
+
 	canvas = document.getElementById("myCanvas");
 	ctx = canvas.getContext("2d");
 	var bodySize = document.body.getBoundingClientRect();
@@ -8,13 +9,72 @@ function init () {
 	playerBullets = new PBullets("models/Player'sBull.png");
 	bgStars = new Stars();
 	asteroid = new Asteroids();
-	setInterval(draw, fps);
 	enemy = new Enemy("models/CommonEnemy/2.png");
+	EBullets = new EnemyBullet("models/Enemy'sBull.png");
+
+	ctx.beginPath();
+	ctx.rect(canvas.width / 2 - 250, canvas.height / 2 - 100, 500, 200);
+	ctx.fillStyle = "#3e2c66";
+	ctx.fill();
+	ctx.closePath();
+	ctx.font = "40px Arial";
+	ctx.fillStyle = "white";
+	ctx.fillText("Press space bar to start", canvas.width / 2 - 200, canvas.height / 2 - 50);
+	ctx.font = "25px Arial";
+	ctx.fillText("Controlling the ship with the mouse", canvas.width / 2 - 240, canvas.height / 2 + -10);
+	ctx.fillText("or arrows on the keyboard", canvas.width / 2 - 240, canvas.height / 2 + 30);
+	ctx.fillText("Shooting while pressing the space bar", canvas.width / 2 - 240, canvas.height / 2 + 70);
+	interval = setInterval(start, fps);
 }
+
+function End () {
+	ctx.beginPath();
+	ctx.rect(canvas.width / 2 - 250, canvas.height / 2 - 100, 500, 200);
+	ctx.fillStyle = "#3e2c66";
+	ctx.fill();
+	ctx.closePath();
+	ctx.font = "40px Arial";
+	ctx.fillStyle = "white";
+	ctx.fillText("Game Over", canvas.width / 2 - 110, canvas.height / 2 - 40);
+	ctx.font = "25px Arial";
+	ctx.fillText("Your score: " + playerShip.score, canvas.width / 2 - 240, canvas.height / 2 + 10);
+	ctx.fillText("Try again, press space", canvas.width / 2 - 240, canvas.height / 2 + 50);
+	wait();
+	
+}
+
+function delay(x) {
+	var d = new Date();
+	var c, diff;
+	while (1) {
+		c=new Date();
+		diff = c-d;
+		if (diff > x) break;
+	}
+}
+
+function wait() {
+	if (!spacePressed) {
+		setTimeout(wait, 60);
+	} else {
+		delay(100);
+		Start();
+	}
+}
+
+function start() {
+	if (spacePressed) {
+		clearInterval(interval);
+		interval = setInterval(draw, fps);
+	}
+}
+
+
 // System settings
 var canvas;
 var ctx;
 var fps = 1000 / 60;
+var interval;
 
 // Player
 class Player {	
@@ -29,11 +89,13 @@ class Player {
 		this.img.src = img;
 		this.lives = lives;
 		this.score = 0;
+		this.immortality = 0;
 	}
 
 	draw() {
 		ctx.drawImage(this.img, this.x, this.y);
 		this.drawInfo();
+		if (this.immortality > 0) this.immortality--;
 	}
 
 	drawInfo() {
@@ -224,7 +286,10 @@ class Asteroids {
 	getCollision() {
 		if (this.ast.x < playerShip.x + playerShip.width - 15 && this.ast.x + this.ast.width > playerShip.x &&
 			this.ast.y < playerShip.y + playerShip.height - 15 && this.ast.y + this.ast.height > playerShip.y) {
-			playerShip.lives--;
+			if (playerShip.immortality == 0) {
+				playerShip.lives--;
+				playerShip.immortality = 180;
+			}
 			this.ast.status = false;
 			this.timeout = 500;
 		}
@@ -248,6 +313,7 @@ class Enemy {
 	addEnemy() {
 		if (this.timeout == 0 && this.count < this.maxCountEnemy) {
 			this.enemies[this.right] = {x: canvas.width - this.width , y: randomInt(20, canvas.height - 20 - this.height), dx: -3, dy: -3, health: 25, status: 1};
+			EBullets.enemyBull[this.right] = {left: 0, right: 0, timeout: 0, mas: []};
 			this.right += 1;
 			if (this.right == this.maxCountEnemy + 20)
 				this.right = 0;
@@ -266,6 +332,7 @@ class Enemy {
 				this.enemies[i].x += this.enemies[i].dx;
 				this.enemies[i].y += this.enemies[i].dy;
 				ctx.drawImage(this.img, this.enemies[i].x, this.enemies[i].y);
+				EBullets.draw(i);
 				if (this.enemies[i].x < canvas.width / 2 || this.enemies[i].x + this.width > canvas.width)
 					this.enemies[i].dx = -this.enemies[i].dx;
 				if (this.enemies[i].y < 0 || this.enemies[i].y + this.height > canvas.height)
@@ -283,7 +350,6 @@ class Enemy {
 	draw() {
 		if (this.left < this.right) {
 			this.checkList(this.left, this.right);
-			
 		} else if (this.left > this.right) {
 			this.checkList(this.left, this.maxCountEnemy + 20);
 			this.checkList(0, this.right);
@@ -292,6 +358,73 @@ class Enemy {
 	}
 }
 var enemy;
+
+class EnemyBullet {
+	constructor (img) {
+		this.enemyBull = [];
+		this.img = new Image();
+		this.img.src = img;
+		this.maxCountBul = 1000;
+	}
+	addBullet(numEnemy, bx, by) {
+		
+		if (this.enemyBull[numEnemy].timeout == 0) {
+			this.enemyBull[numEnemy].mas[this.enemyBull[numEnemy].right] = {x: bx + 50, y: by, status: 1};
+			this.enemyBull[numEnemy].right += 1;
+			if (this.enemyBull[numEnemy].right == this.maxCountBul)
+				this.enemyBull[numEnemy].right = 0;
+			this.enemyBull[numEnemy].timeout = 50;
+			
+		} else {
+			this.enemyBull[numEnemy].timeout--;
+		}
+	}
+
+    checkListForMove(left, right, numEnemy) {
+		for (let i = left; i < right; ++i) {
+			if (this.enemyBull[numEnemy].mas[i].status == 1) {
+				ctx.drawImage(this.img, this.enemyBull[numEnemy].mas[i].x, this.enemyBull[numEnemy].mas[i].y);
+				this.enemyBull[numEnemy].mas[i].x -= 8;
+				if (this.enemyBull[numEnemy].mas[i].x > canvas.width)
+					this.enemyBull[numEnemy].mas[i].status = 0;
+				this.getCollision(numEnemy, i);
+
+
+			} else {
+				if (this.enemyBull[numEnemy].left == i) {
+					this.enemyBull[numEnemy].left++;
+					if (this.enemyBull[numEnemy].left == this.maxCountBul)
+						this.enemyBull[numEnemy].left = 0;
+				}
+			}
+			
+		}
+	}
+
+	getCollision(numEnemy, i) {
+		if (this.enemyBull[numEnemy].mas[i].x < playerShip.x + playerShip.width && this.enemyBull[numEnemy].mas[i].x + 34 > playerShip.x &&
+			this.enemyBull[numEnemy].mas[i].y < playerShip.y + playerShip.height && this.enemyBull[numEnemy].mas[i].y + 10 > playerShip.y) {
+			this.enemyBull[numEnemy].mas[i].status = 0;
+			if (playerShip.immortality == 0) {
+				playerShip.immortality = 180;
+				playerShip.lives--;
+			}
+		}
+	}
+
+	draw(numEnemy) {
+		this.addBullet(numEnemy, enemy.enemies[numEnemy].x, enemy.enemies[numEnemy].y);
+		if (this.enemyBull[numEnemy].left < this.enemyBull[numEnemy].right) {
+			this.checkListForMove(this.enemyBull[numEnemy].left, this.enemyBull[numEnemy].right, numEnemy);
+		} else if (this.left > this.right) {
+			this.checkListForMove(this.enemyBull[numEnemy].left, this.enemyBull[numEnemy].maxCountBul, numEnemy);
+			this.checkListForMove(0, this.enemyBull[numEnemy].right, numEnemy);
+		}
+
+	}
+
+}
+var EBullets;
 
 function keyDownHandler(e) {
 	if(e.keyCode == 40) {
@@ -350,7 +483,8 @@ function draw() {
 	
 
 	if (playerShip.lives == 0) {
-		alert("Game is Over");
+		clearInterval(interval);
+		End();
 	}
 	if (playerBullets.timeout > 0) {
 		playerBullets.timeout--;
