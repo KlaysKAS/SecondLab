@@ -4,12 +4,13 @@ function init () {
 	var bodySize = document.body.getBoundingClientRect();
 	canvas.setAttribute("width", bodySize.width);
 	canvas.setAttribute("height", bodySize.height);
-	playerShip = new Player(100, bodySize.height, 7, 7, 100, 42, "models/PlayerShip.png", 3);
+	playerShip = new Player(100, bodySize.height, 7, 7, 99, 84, "models/PlayerShip.png", 3);
 	playerBullets = new PBullets("models/Player'sBull.png");
 	bgStars = new Stars();
+	asteroid = new Asteroids();
 	setInterval(draw, fps);
 }
-
+// System settings
 var canvas;
 var ctx;
 var fps = 1000 / 60;
@@ -70,7 +71,7 @@ class PBullets {
 			for (let i = this.left; i < this.right; ++i) {
 				if (this.bullets[i].status == 1) {
 					ctx.drawImage(this.img, this.bullets[i].x, this.bullets[i].y);
-					this.bullets[i].x += 7;
+					this.bullets[i].x += 8;
 					if (this.bullets[i]. x > canvas.width)
 						this.status = 0;
 				} else {
@@ -85,7 +86,7 @@ class PBullets {
 			for (let i = left; i < this.maxCountBul; ++i) {
 				if (this.bullets[i].status == 1) {
 					ctx.drawImage(this.img, this.bullets[i].x, this.bullets[i].y);
-					this.bullets[i].x += 7;
+					this.bullets[i].x += 8;
 					if (this.bullets[i].x > canvas.width)
 						this.bullets[i].status = 0;
 				} else {
@@ -112,11 +113,10 @@ class PBullets {
 			}
 		}
 	}
-	
 }
 var playerBullets;
 
-//Moves
+// Moves
 function mouseMoveHandler(e) {
     var relativeX = e.clientX - canvas.offsetLeft;
     var relativeY = e.clientY - canvas.offsetTop;
@@ -127,7 +127,7 @@ function mouseMoveHandler(e) {
     	playerShip.y = relativeY - playerShip.height/ 2;
 }
 
-//backgroud Stars
+// backgroud Stars
 class Stars {
 	constructor() {
 		this.bank = [];
@@ -157,6 +157,58 @@ class Stars {
 	}
 }
 var bgStars;
+
+class Asteroids {
+	constructor() {
+		this.bank = [];
+		for (let i = 1; i <= 8; ++i) {
+			this.bank[i - 1] = {num: i - 1, img: new Image()};
+			var path = "models/Asteroids/" + i + ".png";
+			this.bank[i - 1].img.src = path;
+		}
+		this.timeout = 0;
+		this.ast = {x: 0, y: 0, dx: 0, dy: 0, width: 88, height: 86, img: 0, status: false};
+	}
+	addAst() {
+		if (this.ast.status == false && this.timeout == 0) {
+			if (/*randomInt(0, 5) == 3*/ true) {
+				this.ast.y = randomInt(20, canvas.height - 150 - this.ast.height) ;
+				this.ast.x = canvas.width + 20;
+				this.ast.dx = randomInt(0, 5);
+				this.ast.dy = randomInt(-2, 2);
+				this.ast.status = true;
+				this.ast.img = randomInt(0, 7);
+			}
+		}
+	}
+	drawAst() {
+		if (this.ast.status) {
+			ctx.drawImage(this.bank[this.ast.img].img, this.ast.x, this.ast.y, this.ast.width, this.ast.height);
+			this.ast.x -= this.ast.dx;
+			this.ast.y += this.ast.dy;
+			if (this.ast.x + this.ast.width < 0 || this.ast.y > canvas.height || this.ast.y + this.ast.height < 0) {
+				this.ast.status = false;
+				this.timeout = 500;
+			}
+			this.getCollision();
+		} else {
+			if (this.timeout > 0)
+				this.timeout--;
+		}
+	}
+	getCollision() {
+		if (this.ast.x < playerShip.x + playerShip.width - 15 && this.ast.x + this.ast.width > playerShip.x &&
+			this.ast.y < playerShip.y + playerShip.height - 15 && this.ast.y + this.ast.height > playerShip.y) {
+			playerShip.lives--;
+			this.ast.status = false;
+			this.timeout = 500;
+			if (lives == 0) {
+				alert("Game is Over");
+			}
+		}
+	}
+}
+var asteroid;
 
 function keyDownHandler(e) {
 	if(e.keyCode == 40) {
@@ -209,7 +261,9 @@ function draw() {
 	bgStars.drawStar();
 	playerShip.draw();
 	playerBullets.draw();
-	
+	asteroid.addAst();
+	asteroid.drawAst();
+	//ctx.drawImage(asteroid.bank[asteroid.ast.img].img, canvas.width - 20, randomInt(20, canvas.height - 150 - asteroid.ast.height), asteroid.ast.width, asteroid.ast.height);
 
 	if (playerBullets.timeout > 0) {
 		playerBullets.timeout--;
