@@ -9,6 +9,7 @@ function init () {
 	bgStars = new Stars();
 	asteroid = new Asteroids();
 	setInterval(draw, fps);
+	enemy = new Enemy("models/CommonEnemy/2.png");
 }
 // System settings
 var canvas;
@@ -66,52 +67,75 @@ class PBullets {
 			this.timeout = 20;
 		}
 	}
-	draw() {
-		if (this.left < this.right) {
-			for (let i = this.left; i < this.right; ++i) {
-				if (this.bullets[i].status == 1) {
-					ctx.drawImage(this.img, this.bullets[i].x, this.bullets[i].y);
-					this.bullets[i].x += 8;
-					if (this.bullets[i]. x > canvas.width)
-						this.status = 0;
-				} else {
-					if (this.left == i) {
-						this.left ++;
-						if (this.left == this.maxCountBul)
-							this.left = 0;
-					}
-				}
-			}
-		} else if (this.left > this.right) {
-			for (let i = left; i < this.maxCountBul; ++i) {
-				if (this.bullets[i].status == 1) {
-					ctx.drawImage(this.img, this.bullets[i].x, this.bullets[i].y);
-					this.bullets[i].x += 8;
-					if (this.bullets[i].x > canvas.width)
-						this.bullets[i].status = 0;
-				} else {
-					if (this.left == i) {
-						this.left ++;
-						if (this.left == this.maxCountBul)
-							this.left = 0;
-					}
-				}
-			}
-			for (let i = 0; i < right; ++i) {
-				if (this.bullets[i].status == 1) {
-					ctx.drawImage(this.img, this.bullets[i].x, this.bullets[i].y);
-					this.bullets[i].x += 7;
-					if (this.bullets[i]. x > canvas.width)
-						this.bullets[i].status = 0;
-				} else {
-					if (this.left == i) {
-						this.left ++;
-						if (this.left == this.maxCountBul)
-							this.left = 0;
-					}
+	checkListForMove(left, right) {
+		for (let i = left; i < right; ++i) {
+			if (this.bullets[i].status == 1) {
+				ctx.drawImage(this.img, this.bullets[i].x, this.bullets[i].y);
+				this.bullets[i].x += 8;
+				if (this.bullets[i]. x > canvas.width)
+					this.status = 0;
+			} else {
+				if (this.left == i) {
+					this.left++;
+					if (this.left == this.maxCountBul)
+						this.left = 0;
 				}
 			}
 		}
+	}
+	checkListForCollision(left, right, leftEnemy, rightEnemy) {
+		for (let i = left; i < right; ++i) {
+			if (this.bullets[i].status == 1) {
+				var b = this.bullets[i];
+
+				for (let j = leftEnemy; j < rightEnemy; ++j) {
+					if (enemy.enemies[j].status == 1) {
+						var e = enemy.enemies[j];
+						
+						if (b.x + 26 > e.x + 7 && b.x < e.x + enemy.width && b.y + 14 > e.y && b.y < e.y + enemy.width) {
+							enemy.enemies[j].health--;
+							if (enemy.enemies[j].health == 0) {
+								enemy.enemies[j].status = 0;
+								playerShip.score += 25;
+								enemy.count--;
+							}
+							this.bullets[i].status = 0;
+						}
+
+					}
+				}
+
+			}
+		}
+	}
+	getCollision() {
+		if (this.left < this.right) {
+			if (enemy.left < enemy.right) {
+				this.checkListForCollision(this.left, this.right, enemy.left, enemy.right);
+			} else if (enemy.left > enemy.right) {
+				this.checkListForCollision(this.left, this.right, enemy.left, enemy.maxCountEnemy + 20);
+				this.checkListForCollision(this.left, this.right, 0, enemy.right);
+			}
+		} else if (this.left > this.right) {
+			if (enemy.left < enemy.right) {
+				this.checkListForCollision(this.left, this.maxCountBul, enemy.left, enemy.right);
+				this.checkListForCollision(0, this.right, enemy.left, enemy.right);
+			} else if (enemy.left > enemy.right) {
+				this.checkListForCollision(this.left, this.maxCountBul, enemy.left, enemy.maxCountEnemy + 20);
+				this.checkListForCollision(this.left, this.maxCountBul, 0, enemy.right);
+				this.checkListForCollision(0, this.right, enemy.left, enemy.maxCountEnemy + 20);
+				this.checkListForCollision(0, this.right, 0, enemy.right);
+			}
+		}
+	}
+	draw() {
+		if (this.left < this.right) {
+			this.checkListForMove(this.left, this.right);
+		} else if (this.left > this.right) {
+			this.checkListForMove(this.left, this.maxCountBul);
+			this.checkListForMove(0, this.right);
+		}
+		this.getCollision();
 	}
 }
 var playerBullets;
@@ -171,17 +195,18 @@ class Asteroids {
 	}
 	addAst() {
 		if (this.ast.status == false && this.timeout == 0) {
-			if (/*randomInt(0, 5) == 3*/ true) {
+			if (randomInt(0, 5) == 3) {
 				this.ast.y = randomInt(20, canvas.height - 150 - this.ast.height) ;
 				this.ast.x = canvas.width + 20;
-				this.ast.dx = randomInt(0, 5);
+				this.ast.dx = randomInt(3, 8);
 				this.ast.dy = randomInt(-2, 2);
 				this.ast.status = true;
 				this.ast.img = randomInt(0, 7);
 			}
 		}
 	}
-	drawAst() {
+	draw() {
+		this.addAst();
 		if (this.ast.status) {
 			ctx.drawImage(this.bank[this.ast.img].img, this.ast.x, this.ast.y, this.ast.width, this.ast.height);
 			this.ast.x -= this.ast.dx;
@@ -202,13 +227,71 @@ class Asteroids {
 			playerShip.lives--;
 			this.ast.status = false;
 			this.timeout = 500;
-			if (lives == 0) {
-				alert("Game is Over");
-			}
 		}
 	}
 }
 var asteroid;
+
+class Enemy {
+	constructor (img) {
+		this.enemies = [];
+		this.img = new Image();
+		this.img.src = img;
+		this.left = 0;
+		this.right = 0;
+		this.maxCountEnemy = 7;
+		this.timeout = 0;
+		this.height = 100;
+		this.width = 170;
+		this.count = 0;
+	}
+	addEnemy() {
+		if (this.timeout == 0 && this.count < this.maxCountEnemy) {
+			this.enemies[this.right] = {x: canvas.width - this.width , y: randomInt(20, canvas.height - 20 - this.height), dx: -3, dy: -3, health: 25, status: 1};
+			this.right += 1;
+			if (this.right == this.maxCountEnemy + 20)
+				this.right = 0;
+			this.timeout = 240;
+			this.count++;
+		} else {
+			if (this.timeout > 0)
+				this.timeout--;
+		}
+	}
+	checkList(left, right) {
+		
+		for (let i = left; i < right; ++i) {
+			if (this.enemies[i].status == 1) {
+				
+				this.enemies[i].x += this.enemies[i].dx;
+				this.enemies[i].y += this.enemies[i].dy;
+				ctx.drawImage(this.img, this.enemies[i].x, this.enemies[i].y);
+				if (this.enemies[i].x < canvas.width / 2 || this.enemies[i].x + this.width > canvas.width)
+					this.enemies[i].dx = -this.enemies[i].dx;
+				if (this.enemies[i].y < 0 || this.enemies[i].y + this.height > canvas.height)
+					this.enemies[i].dy = -this.enemies[i].dy;
+			} else {
+				if (this.left == i) {
+					this.left ++;
+					if (this.left == this.maxCountEnemy + 1)
+						this.left = 0;
+				}
+			}
+		}
+	}
+
+	draw() {
+		if (this.left < this.right) {
+			this.checkList(this.left, this.right);
+			
+		} else if (this.left > this.right) {
+			this.checkList(this.left, this.maxCountEnemy + 20);
+			this.checkList(0, this.right);
+		}
+
+	}
+}
+var enemy;
 
 function keyDownHandler(e) {
 	if(e.keyCode == 40) {
@@ -261,10 +344,14 @@ function draw() {
 	bgStars.drawStar();
 	playerShip.draw();
 	playerBullets.draw();
-	asteroid.addAst();
-	asteroid.drawAst();
-	//ctx.drawImage(asteroid.bank[asteroid.ast.img].img, canvas.width - 20, randomInt(20, canvas.height - 150 - asteroid.ast.height), asteroid.ast.width, asteroid.ast.height);
+	asteroid.draw();
+	enemy.addEnemy();
+	enemy.draw();
+	
 
+	if (playerShip.lives == 0) {
+		alert("Game is Over");
+	}
 	if (playerBullets.timeout > 0) {
 		playerBullets.timeout--;
 	}
